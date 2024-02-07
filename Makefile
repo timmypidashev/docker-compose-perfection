@@ -7,15 +7,16 @@ PROJECT_REGISTRY						:= "https://ghcr.io/timmypidashev/docker-compose-perfectio
 
 CONTAINER_PROXY_NAME					:= "proxy"
 CONTAINER_PROXY_VERSION 				:= "v0.0.0"
-CONTAINER_PROXY_LOCATION				:= "./proxy"
+CONTAINER_PROXY_LOCATION				:= "./src/proxy"
 CONTAINER_PROXY_DESCRIPTION				:= "An example caddy docker container serving as a reverse proxy."
 
 CONTAINER_WEBAPP_NAME					:= "webapp"
 CONTAINER_WEBAPP_VERSION				:= "v0.0.0"
-CONTAINER_WEBAPP_LOCATION				:= "./webapp"
+CONTAINER_WEBAPP_LOCATION				:= "./src/webapp"
 CONTAINER_WEBAPP_DESCRIPTION			:= "An example container running a reflex webapp."
 
 .PHONY: run build push bump
+.SILENT:
 
 run:
 	# Arguments:
@@ -24,6 +25,22 @@ run:
 	# Explanation:
 	# * Runs the docker compose file with the specified environment(compose.dev.yml, or compose.prod.yml)
 	# * Passes all generated arguments to the compose file.
+	
+	# Make sure we have been given proper arguments.
+	@if [ "$(word 2,$(MAKECMDGOALS))" = "dev" ]; then \
+		echo "Running in development environment"; \
+	elif [ "$(word 2,$(MAKECMDGOALS))" = "prod" ]; then \
+		echo "Running in production environment"; \
+	else \
+		echo "Invalid usage. Please use 'make run dev' or 'make run prod'"; \
+		exit 1; \
+	fi
+
+	# Generate and prepare all docker build arguments.	
+
+	# Run docker compose within the proper environment.
+	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up
+
 
 build:
 	# Arguments

@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  proxy:
+    container_name: proxy
+    build:
+      context: ./src/proxy
+      dockerfile: Dockerfile.dev
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - "./src/proxy/Caddyfile.dev:/Caddyfile.dev:ro"
+    restart: always
+    depends_on:
+      - webapp
