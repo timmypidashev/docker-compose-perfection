@@ -36,10 +36,11 @@ run:
 		exit 1; \
 	fi
 
-	# Generate and prepare all docker build arguments.	
+	# Generate and prepare all docker build arguments.
+	$(generate_args)
 
 	# Run docker compose within the proper environment.
-	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up
+	#docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up
 
 
 build:
@@ -54,3 +55,19 @@ build:
 push:
 	# Arguments
 	# ToDo: Figure out the general process for push once run and build are implemented.
+	#
+
+
+define generate_args
+    @echo -n $(shell \
+        grep -E '^[[:alnum:]_]+[[:space:]]*[:?]?[[:space:]]*=' $(MAKEFILE_LIST) | \
+        awk 'BEGIN {FS = ":="} { \
+            gsub(/^[[:space:]]+|[[:space:]]+$$/, "", $$2); \
+            gsub(/^/, "\x27", $$2); \
+            gsub(/$$/, "\x27", $$2); \
+            gsub(/[[:space:]]+/, "", $$1); \
+            gsub(":", "", $$1); \
+            printf "--build-arg %s=%s ", $$1, $$2 \
+        }' | \
+        tr -d '\n')
+endef
