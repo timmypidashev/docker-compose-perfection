@@ -48,6 +48,20 @@ build:
 	# Explanation:
 	# * Builds the specified docker image with the appropriate environment.
 	# * Passes all generated arguments to docker build-kit.
+	#
+	# Extracting target information from the target
+	#
+	#
+	# Extracting target container name and environment from input
+    
+	$(eval INPUT_TARGET := $(word 2,$(MAKECMDGOALS)))
+	$(eval INPUT_CONTAINER := $(firstword $(subst :, ,$(INPUT_TARGET))))
+	$(eval INPUT_ENVIRONMENT := $(lastword $(subst :, ,$(INPUT_TARGET))))
+	@echo "$(INPUT_CONTAINER) $(INPUT_ENVIRONMENT)"
+
+	$(containers)
+
+	$(call get_container_location,$(INPUT_CONTAINER))
 
 push:
 	# Arguments
@@ -73,4 +87,15 @@ define args
         }') \
         --build-arg BUILD_DATE='"$(shell date)"' \
 		--build-arg GIT_COMMIT='"$(shell git rev-parse HEAD)"'
+endef
+
+define containers
+	@echo -n $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$($(var))$(_NL)))
+endef
+
+define get_container_location
+	$(strip $(eval CONTAINER_NAME := $(shell echo $(1) | tr '[:lower:]' '[:upper:]'))) \
+	$(if $(CONTAINER_$(CONTAINER_NAME)_LOCATION), \
+		@echo -n $(CONTAINER_$(CONTAINER_NAME)_LOCATION), \
+		$(error Location data for container $(1) not found))
 endef
