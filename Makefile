@@ -40,7 +40,7 @@ run:
 	$(generate_args)
 
 	# Run docker compose within the proper environment.
-	#docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up
+	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up
 
 
 build:
@@ -58,6 +58,9 @@ push:
 	#
 
 
+# This function generates Docker build arguments based on variables defined in the Makefile.
+# It extracts variable assignments, removes whitespace, and formats them as build arguments.
+# Additionally, it appends any custom shell generated arguments defined below.
 define generate_args
     @echo -n $(shell \
         grep -E '^[[:alnum:]_]+[[:space:]]*[:?]?[[:space:]]*=' $(MAKEFILE_LIST) | \
@@ -68,6 +71,7 @@ define generate_args
             gsub(/[[:space:]]+/, "", $$1); \
             gsub(":", "", $$1); \
             printf "--build-arg %s=%s ", $$1, $$2 \
-        }' | \
-        tr -d '\n')
+        }') \
+        --build-arg BUILD_DATE='"$(shell date)"' \
+		--build-arg GIT_COMMIT='"$(shell git rev-parse HEAD)"'
 endef
