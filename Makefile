@@ -16,6 +16,7 @@ CONTAINER_WEBAPP_LOCATION				:= "./src/webapp"
 CONTAINER_WEBAPP_DESCRIPTION			:= "An example container running a reflex webapp."
 
 .PHONY: run build push bump
+.IGNORE: run
 .SILENT:
 
 run:
@@ -36,12 +37,8 @@ run:
 		exit 1; \
 	fi
 
-	# Generate and prepare all docker build arguments.
-	$(generate_args)
-
-	# Run docker compose within the proper environment.
-	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up
-
+	# Run docker compose within the proper environment, passing all generated arguments to docker.
+	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up $$(args)
 
 build:
 	# Arguments
@@ -55,13 +52,15 @@ build:
 push:
 	# Arguments
 	# ToDo: Figure out the general process for push once run and build are implemented.
-	#
+
+prune:
+	# Removes all built and cached docker images and containers.
 
 
 # This function generates Docker build arguments based on variables defined in the Makefile.
 # It extracts variable assignments, removes whitespace, and formats them as build arguments.
 # Additionally, it appends any custom shell generated arguments defined below.
-define generate_args
+define args
     @echo -n $(shell \
         grep -E '^[[:alnum:]_]+[[:space:]]*[:?]?[[:space:]]*=' $(MAKEFILE_LIST) | \
         awk 'BEGIN {FS = ":="} { \
