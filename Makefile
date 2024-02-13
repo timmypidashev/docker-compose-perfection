@@ -7,12 +7,12 @@ PROJECT_REGISTRY						:= "https://ghcr.io/timmypidashev/docker-compose-perfectio
 
 CONTAINER_PROXY_NAME					:= "proxy"
 CONTAINER_PROXY_VERSION 				:= "v0.0.0"
-CONTAINER_PROXY_LOCATION				:= "./src/proxy"
+CONTAINER_PROXY_LOCATION				:= "src/proxy"
 CONTAINER_PROXY_DESCRIPTION				:= "An example caddy docker container serving as a reverse proxy."
 
 CONTAINER_WEBAPP_NAME					:= "webapp"
 CONTAINER_WEBAPP_VERSION				:= "v0.0.0"
-CONTAINER_WEBAPP_LOCATION				:= "./src/webapp"
+CONTAINER_WEBAPP_LOCATION				:= "src/webapp"
 CONTAINER_WEBAPP_DESCRIPTION			:= "An example container running a reflex webapp."
 
 .PHONY: run build push bump
@@ -49,6 +49,7 @@ build:
 	# Explanation:
 	# * Builds the specified docker image with the appropriate environment.
 	# * Passes all generated arguments to docker build-kit.
+	# * 
 	
 	# Extract container and environment inputted.
 	$(eval INPUT_TARGET := $(word 2,$(MAKECMDGOALS)))
@@ -61,10 +62,14 @@ build:
         exit 1; \
     fi
 
+	# Validate input environment
+	@if [ "$(strip $(INPUT_ENVIRONMENT))" != "dev" ] && [ "$(strip $(INPUT_ENVIRONMENT))" != "prod" ]; then \
+        echo "Invalid environment. Please specify 'dev' or 'prod'"; \
+        exit 1; \
+    fi
 
-	#echo "Invalid container name. Please specify one of the following: $(containers)"
-
-	#echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var))))))"
+	# Build the selected image within its proper build environment.
+	docker buildx build --load -t $(INPUT_CONTAINER):$(INPUT_ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/Dockerfile.$(INPUT_ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/. --no-cache $$(args)
 
 push:
 	# Arguments
@@ -73,13 +78,15 @@ push:
 prune:
 	# Removes all built and cached docker images and containers.
 
+bump:
+	# Future: consider adding this; for now manually bumping project and container versions is acceptable :D
 
 # This function generates Docker build arguments based on variables defined in the Makefile.
 # It extracts variable assignments, removes whitespace, and formats them as build arguments.
 # Additionally, it appends any custom shell generated arguments defined below.
 define args
-    @echo -n $(shell \
-        grep -E '^[[:alnum:]_]+[[:space:]]*[:?]?[[:space:]]*=' $(MAKEFILE_LIST) | \
+    $(shell \
+        @echo -n grep -E '^[[:alnum:]_]+[[:space:]]*[:?]?[[:space:]]*=' $(MAKEFILE_LIST) | \
         awk 'BEGIN {FS = ":="} { \
             gsub(/^[[:space:]]+|[[:space:]]+$$/, "", $$2); \
             gsub(/^/, "\x27", $$2); \
@@ -92,13 +99,22 @@ define args
 		--build-arg GIT_COMMIT='"$(shell git rev-parse HEAD)"'
 endef
 
+# This function returns a list of container names defined in the Makefile.
+# In order for this function to return a container, it needs to have this format: CONTAINER_%_NAME!
 define containers
     $(strip $(filter-out $(_NL),$(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var)))))))
 endef
 
-define get_container_location
+define container_location
 	$(strip $(eval CONTAINER_NAME := $(shell echo $(1) | tr '[:lower:]' '[:upper:]'))) \
 	$(if $(CONTAINER_$(CONTAINER_NAME)_LOCATION), \
-		@echo -n $(CONTAINER_$(CONTAINER_NAME)_LOCATION), \
+		$(CONTAINER_$(CONTAINER_NAME)_LOCATION), \
 		$(error Location data for container $(1) not found))
+endef
+
+define container_version
+	$(strip $(eval CONTAINER_NAME := $(shell echo $(1) | tr '[:lower:]' '[:upper:]'))) \
+	$(if $(CONTAINER_$(CONTAINER_NAME)_VERSION), \
+		$(CONTAINER_$(CONTAINER_NAME)_VERSION), \
+		$(error Version data for container $(1) not found))
 endef
