@@ -40,6 +40,7 @@ run:
 	# Run docker compose within the proper environment, passing all generated arguments to docker.
 	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up $$(args)
 
+
 build:
 	# Arguments
 	# [context]: Build context(where the Dockerfile is located for the image to be built)
@@ -48,20 +49,22 @@ build:
 	# Explanation:
 	# * Builds the specified docker image with the appropriate environment.
 	# * Passes all generated arguments to docker build-kit.
-	#
-	# Extracting target information from the target
-	#
-	#
-	# Extracting target container name and environment from input
-    
+	
+	# Extract container and environment inputted.
 	$(eval INPUT_TARGET := $(word 2,$(MAKECMDGOALS)))
 	$(eval INPUT_CONTAINER := $(firstword $(subst :, ,$(INPUT_TARGET))))
 	$(eval INPUT_ENVIRONMENT := $(lastword $(subst :, ,$(INPUT_TARGET))))
-	@echo "$(INPUT_CONTAINER) $(INPUT_ENVIRONMENT)"
 
-	$(containers)
+	# Validate input container name.
+	@if [ -z "$(filter $(INPUT_CONTAINER),$(shell echo "$(containers)"))" ]; then \
+        echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var))))))"; \
+        exit 1; \
+    fi
 
-	$(call get_container_location,$(INPUT_CONTAINER))
+
+	#echo "Invalid container name. Please specify one of the following: $(containers)"
+
+	#echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var))))))"
 
 push:
 	# Arguments
@@ -90,7 +93,7 @@ define args
 endef
 
 define containers
-	@echo -n $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$($(var))$(_NL)))
+    $(strip $(filter-out $(_NL),$(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var)))))))
 endef
 
 define get_container_location
