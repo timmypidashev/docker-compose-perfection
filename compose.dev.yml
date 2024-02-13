@@ -1,15 +1,32 @@
 version: "3.8"
 
+networks:
+  caddy:
+
 services:
-  proxy:
-    container_name: proxy
-    image: docker-compose-perfection/proxy:dev
+  caddy:
+    container_name: caddy
+    image: caddy:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./Caddyfile.dev:/etc/caddy/Caddyfile:ro"
+    networks:
+      - caddy
+    restart: always
+    depends_on:
+      - webapp
+
+  webapp:
+    container_name: webapp
+    image: docker-compose-perfection/webapp:dev
     build:
-      context: ./src/proxy
+      context: ./src/webapp
       dockerfile: Dockerfile.dev
     ports:
-      - "80:8080"
-      - "443:8443"
-    volumes:
-      - "./src/proxy/Caddyfile.dev:/Caddyfile.dev:ro"
-    restart: always
+      - "3000:3000"
+      - "8000:8000"
+    networks:
+      - caddy
+    

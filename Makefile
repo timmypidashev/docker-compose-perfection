@@ -5,11 +5,6 @@ PROJECT_LICENSE 						:= "MIT"
 PROJECT_SOURCES							:= "https://github.com/timmypidashev/docker-compose-perfection"
 PROJECT_REGISTRY						:= "https://ghcr.io/timmypidashev/docker-compose-perfection"
 
-CONTAINER_PROXY_NAME					:= "proxy"
-CONTAINER_PROXY_VERSION 				:= "v0.0.0"
-CONTAINER_PROXY_LOCATION				:= "src/proxy"
-CONTAINER_PROXY_DESCRIPTION				:= "An example caddy docker container serving as a reverse proxy."
-
 CONTAINER_WEBAPP_NAME					:= "webapp"
 CONTAINER_WEBAPP_VERSION				:= "v0.0.0"
 CONTAINER_WEBAPP_LOCATION				:= "src/webapp"
@@ -38,7 +33,7 @@ run:
 	fi
 
 	# Run docker compose within the proper environment, passing all generated arguments to docker.
-	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up $$(args)
+	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up --remove-orphans $$(args)
 
 
 build:
