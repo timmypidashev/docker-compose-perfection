@@ -21,6 +21,7 @@ class State(rx.State):
     def random(self):
         """Randomize the count."""
         self.count = random.randint(0, 100)
+        
 
 
 def index():
