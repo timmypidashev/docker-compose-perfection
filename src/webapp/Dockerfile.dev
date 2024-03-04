@@ -1,6 +1,10 @@
 # Stage 1: init
 FROM python:3.11 as init
 
+ARG CONTAINER_WEBAPP_VERSION
+
+RUN echo "VERSION: ${CONTAINER_WEBAPP_VERSION}"
+
 # Copy local context to `/app` inside container (see .dockerignore)
 WORKDIR /app
 COPY . .
@@ -17,6 +21,7 @@ RUN pip install -r requirements.txt
 RUN reflex init
 
 # Export static copy of frontend to /app/.web/_static
+RUN echo "Exporting reflex app to shrink the docker image size, not actually a prod build."
 RUN reflex export --frontend-only --no-zip
 
 # Copy static files out of /app to save space in backend image

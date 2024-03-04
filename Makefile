@@ -32,8 +32,11 @@ run:
 		exit 1; \
 	fi
 
+	# Evaluate all docker build args and wrap them nicely for use in the command below.
+	$(eval ARGS := $(shell echo $(args)))
+
 	# Run docker compose within the proper environment, passing all generated arguments to docker.
-	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up --remove-orphans $$(args)
+	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up --remove-orphans $(ARGS)
 
 
 build:
@@ -62,9 +65,12 @@ build:
         echo "Invalid environment. Please specify 'dev' or 'prod'"; \
         exit 1; \
     fi
-
+	
+	# Evaluate all docker build args and wrap them nicely for use in the command below.
+	$(eval ARGS := $(shell echo $(args)))
+	
 	# Build the selected image within its proper build environment.
-	docker buildx build --load -t $(INPUT_CONTAINER):$(INPUT_ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/Dockerfile.$(INPUT_ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/. --no-cache $$(args)
+	docker buildx build --load -t $(INPUT_CONTAINER):$(INPUT_ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/Dockerfile.$(INPUT_ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/. $(ARGS) --no-cache --progress=plain
 
 push:
 	# Arguments
@@ -81,7 +87,7 @@ bump:
 # Additionally, it appends any custom shell generated arguments defined below.
 define args
     $(shell \
-        @echo -n grep -E '^[[:alnum:]_]+[[:space:]]*[:?]?[[:space:]]*=' $(MAKEFILE_LIST) | \
+        grep -E '^[[:alnum:]_]+[[:space:]]*[:?]?[[:space:]]*=' $(MAKEFILE_LIST) | \
         awk 'BEGIN {FS = ":="} { \
             gsub(/^[[:space:]]+|[[:space:]]+$$/, "", $$2); \
             gsub(/^/, "\x27", $$2); \
