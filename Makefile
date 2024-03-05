@@ -10,9 +10,18 @@ CONTAINER_WEBAPP_VERSION				:= "v0.0.0"
 CONTAINER_WEBAPP_LOCATION				:= "src/webapp"
 CONTAINER_WEBAPP_DESCRIPTION			:= "An example container running a reflex webapp."
 
-.PHONY: run build push bump
-.IGNORE: run
-.SILENT:
+.DEFAULT_GOAL := help
+.PHONY: run build push prune bump
+.IGNORE: run build push prune bump
+.SILENT: run build push prune bump
+
+help:
+	@echo "Available targets:"
+	@echo "  run           - Runs the docker compose file with the specified environment (dev or prod)"
+	@echo "  build         - Builds the specified docker image with the appropriate environment"
+	@echo "  push          - Pushes the built docker image to the registry"
+	@echo "  prune         - Removes all built and cached docker images and containers"
+	@echo "  bump          - Bumps the project and container versions"
 
 run:
 	# Arguments:
@@ -32,11 +41,8 @@ run:
 		exit 1; \
 	fi
 
-	# Evaluate all docker build args and wrap them nicely for use in the command below.
-	$(eval ARGS := $(shell echo $(args)))
-
 	# Run docker compose within the proper environment, passing all generated arguments to docker.
-	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up --remove-orphans $(ARGS)
+	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up --remove-orphans
 
 
 build:
@@ -70,7 +76,7 @@ build:
 	$(eval ARGS := $(shell echo $(args)))
 	
 	# Build the selected image within its proper build environment.
-	docker buildx build --load -t $(INPUT_CONTAINER):$(INPUT_ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/Dockerfile.$(INPUT_ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/. $(ARGS) --no-cache --progress=plain
+	docker buildx build --load -t $(INPUT_CONTAINER):$(INPUT_ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/Dockerfile.$(INPUT_ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/. $(ARGS) --no-cache
 
 push:
 	# Arguments
