@@ -3,10 +3,11 @@ PROJECT_AUTHORS 						:= "Timothy Pidashev (timmypidashev) <pidashev.tim@gmail.c
 PROJECT_VERSION 						:= "v0.0.0"
 PROJECT_LICENSE 						:= "MIT"
 PROJECT_SOURCES							:= "https://github.com/timmypidashev/docker-compose-perfection"
-PROJECT_REGISTRY						:= "https://ghcr.io/timmypidashev/docker-compose-perfection"
+PROJECT_REGISTRY						:= "ghcr.io/timmypidashev/docker-compose-perfection"
+PROJECT_ORGANIZATION					:= "org.timmypidashev"
 
 CONTAINER_WEBAPP_NAME					:= "webapp"
-CONTAINER_WEBAPP_VERSION				:= "v0.0.0"
+CONTAINER_WEBAPP_VERSION				:= "v0.1.0"
 CONTAINER_WEBAPP_LOCATION				:= "src/webapp"
 CONTAINER_WEBAPP_DESCRIPTION			:= "An example container running a reflex webapp."
 
@@ -45,38 +46,50 @@ run:
 		exit 1; \
 	fi
 
-	# Run docker compose within the proper environment, passing all generated arguments to docker.
 	docker compose -f compose.$(word 2,$(MAKECMDGOALS)).yml up --remove-orphans
 
 build:
 	# Arguments
-	# [context]: Build context(where the Dockerfile is located for the image to be built)
+	# [container]: Build context(which container to build ['all' to build every container defined])
 	# [environment]: 'dev' or 'prod'
 	#
 	# Explanation:
 	# * Builds the specified docker image with the appropriate environment.
 	# * Passes all generated arguments to docker build-kit.
-	# * 
 	
 	# Extract container and environment inputted.
 	$(eval INPUT_TARGET := $(word 2,$(MAKECMDGOALS)))
 	$(eval INPUT_CONTAINER := $(firstword $(subst :, ,$(INPUT_TARGET))))
 	$(eval INPUT_ENVIRONMENT := $(lastword $(subst :, ,$(INPUT_TARGET))))
 
+	# Call function container_build either through a for loop for each container 
+	# if all is called, or singularly to build the container.
 	$(if $(filter $(strip $(INPUT_CONTAINER)),all), \
 		$(foreach container,$(containers),$(call container_build,$(container) $(INPUT_ENVIRONMENT))), \
 		$(call container_build,$(INPUT_CONTAINER) $(INPUT_ENVIRONMENT)))
 
-	
 push:
 	# Arguments
-	# ToDo: Figure out the general process for push once run and build are implemented.
+	# [container]: Push context(which container to push to the registry)
+	# [version]: Container version to push.
+	#
+	# Explanation:
+	# * Pushes the specified container version to the registry defined in the user configuration.
+	
+	# Extract container and version inputted.
+	$(eval INPUT_TARGET := $(word 2,$(MAKECMDGOALS)))
+	$(eval INPUT_CONTAINER := $(firstword $(subst :, ,$(INPUT_TARGET))))
+	$(eval INPUT_VERSION := $(lastword $(subst :, ,$(INPUT_TARGET))))
+	
+	# Push the specified container version to the registry.
+	# NOTE: docker will complain if the container tag is invalid, no need to validate here.
+	@docker push $(PROJECT_REGISTRY)/$(INPUT_CONTAINER):$(INPUT_VERSION)
 
 prune:
 	# Removes all built and cached docker images and containers.
 
 bump:
-	# Future: consider adding this; for now manually bumping project and container versions is acceptable :D
+	@echo "Future: consider adding this; for now manually bumping project and container versions is acceptable :D"
 
 # This function generates Docker build arguments based on variables defined in the Makefile.
 # It extracts variable assignments, removes whitespace, and formats them as build arguments.
@@ -96,6 +109,17 @@ define args
 		--build-arg GIT_COMMIT='"$(shell git rev-parse HEAD)"'
 endef
 
+# This function generates labels based on variables defined in the Makefile.
+# It extracts only the selected container variables and is used to echo this information
+# to the docker buildx engine in the command line.
+define labels
+	--label $(PROJECT_ORGANIZATION).image.title=$(CONTAINER_$(1)_NAME) \
+	--label $(PROJECT_ORGANIZATION).image.description=$(CONTAINER_$(1)_DESCRIPTION) \
+	--label $(PROJECT_ORGANIZATION).image.authors=$(PROJECT_AUTHORS) \
+	--label $(PROJECT_ORGANIZATION).image.url=$(PROJECT_SOURCES) \
+	--label $(PROJECT_ORGANIZATION).image.source=$(PROJECT_SOURCES)/$(CONTAINER_$(1)_LOCATION)
+endef
+
 # This function returns a list of container names defined in the Makefile.
 # In order for this function to return a container, it needs to have this format: CONTAINER_%_NAME!
 define containers
@@ -106,16 +130,23 @@ define container_build
 	$(eval CONTAINER := $(word 1,$1))
 	$(eval ENVIRONMENT := $(word 2,$1))
 	$(eval ARGS := $(shell echo $(args)))
+	$(eval VERSION := $(strip $(call container_version,$(CONTAINER))))
+	$(eval TAG := $(CONTAINER):$(ENVIRONMENT))
 
 	@echo "Building container: $(CONTAINER)"
 	@echo "Environment: $(ENVIRONMENT)"
+	@echo "Version: $(VERSION)"
 
 	@if [ "$(strip $(ENVIRONMENT))" != "dev" ] && [ "$(strip $(ENVIRONMENT))" != "prod" ]; then \
         echo "Invalid environment. Please specify 'dev' or 'prod'"; \
         exit 1; \
     fi
 
-	docker buildx build --load -t $(CONTAINER):$(ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(CONTAINER))))/Dockerfile.$(ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(CONTAINER))))/. $(ARGS) --no-cache
+	$(if $(filter $(strip $(ENVIRONMENT)),prod), \
+		$(eval TAG := $(PROJECT_REGISTRY)/$(CONTAINER):$(VERSION)), \
+	)
+
+	docker buildx build --load -t $(TAG) -f $(strip $(subst $(SPACE),,$(call container_location,$(CONTAINER))))/Dockerfile.$(ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(CONTAINER))))/. $(ARGS) $(call labels,$(shell echo $(CONTAINER_NAME) | tr '[:lower:]' '[:upper:]')) --no-cache
 endef
 
 define container_location
@@ -126,7 +157,7 @@ endef
 define container_version
 	$(strip $(eval CONTAINER_NAME := $(shell echo $(1) | tr '[:lower:]' '[:upper:]'))) \
 	$(if $(CONTAINER_$(CONTAINER_NAME)_VERSION), \
-		$(CONTAINER_$(CONTAINER_NAME)_VERSION), \
+		$(shell echo $(strip $(strip $(CONTAINER_$(CONTAINER_NAME)_VERSION))) | tr -d '[:space:]'), \
 		$(error Version data for container $(1) not found))
 endef
 
