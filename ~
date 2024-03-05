@@ -109,6 +109,11 @@ define container_build
 
 	@echo "Building container: $(CONTAINER)"
 	@echo "Environment: $(ENVIRONMENT)"
+	
+	@if [ -z "$(filter $(INPUT_CONTAINER) $(CONTAINER),$(containers))" ]; then \
+    	echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var)))))), or 'all' to build all defined containers."; \
+    	exit 1; \
+	fi
 
 	@if [ "$(strip $(ENVIRONMENT))" != "dev" ] && [ "$(strip $(ENVIRONMENT))" != "prod" ]; then \
         echo "Invalid environment. Please specify 'dev' or 'prod'"; \
