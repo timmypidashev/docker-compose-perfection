@@ -4,10 +4,10 @@ PROJECT_VERSION 						:= "v0.0.0"
 PROJECT_LICENSE 						:= "MIT"
 PROJECT_SOURCES							:= "https://github.com/timmypidashev/docker-compose-perfection"
 PROJECT_REGISTRY						:= "ghcr.io/timmypidashev/docker-compose-perfection"
-PROJECT_ORGANIZATION					:= "org.timmypidashev"
+PROJECT_ORGANIZATION					:= "org.opencontainers"
 
 CONTAINER_WEBAPP_NAME					:= "webapp"
-CONTAINER_WEBAPP_VERSION				:= "v0.1.0"
+CONTAINER_WEBAPP_VERSION				:= "v0.2.0"
 CONTAINER_WEBAPP_LOCATION				:= "src/webapp"
 CONTAINER_WEBAPP_DESCRIPTION			:= "An example container running a reflex webapp."
 
