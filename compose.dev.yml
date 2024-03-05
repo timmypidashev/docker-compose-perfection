@@ -20,7 +20,7 @@ services:
 
   webapp:
     container_name: webapp
-    image: docker-compose-perfection/webapp:dev
+    image: webapp:dev
     build:
       context: ./src/webapp
       dockerfile: Dockerfile.dev
@@ -33,4 +33,14 @@ services:
       - "./src/webapp/rxconfig.py:/app/rxconfig.py"
     networks:
       - caddy
-    
+   
+  api:
+    container_name: api
+    image: api:dev
+    build:
+      context: ./src/api
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    networks:
+      - caddy
