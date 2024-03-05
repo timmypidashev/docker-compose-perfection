@@ -59,23 +59,8 @@ build:
 	$(eval INPUT_CONTAINER := $(firstword $(subst :, ,$(INPUT_TARGET))))
 	$(eval INPUT_ENVIRONMENT := $(lastword $(subst :, ,$(INPUT_TARGET))))
 
-	# Validate input container name.
-	@if [ -z "$(filter $(INPUT_CONTAINER),$(shell echo "$(containers)"))" ]; then \
-        echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var)))))), or 'all' to build all defined containers."; \
-        exit 1; \
-    fi
-
-	# Validate input environment
-	@if [ "$(strip $(INPUT_ENVIRONMENT))" != "dev" ] && [ "$(strip $(INPUT_ENVIRONMENT))" != "prod" ]; then \
-        echo "Invalid environment. Please specify 'dev' or 'prod'"; \
-        exit 1; \
-    fi
-	
-	# Evaluate all docker build args and wrap them nicely for use in the command below.
-	$(eval ARGS := $(shell echo $(args)))
-	
-	# Build the selected image within its proper build environment.
-	docker buildx build --load -t $(INPUT_CONTAINER):$(INPUT_ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/Dockerfile.$(INPUT_ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(INPUT_CONTAINER))))/. $(ARGS) --no-cache
+	# Call container_build function with the specified container and environment
+	$(call container_build,$(INPUT_CONTAINER) $(INPUT_ENVIRONMENT))
 
 push:
 	# Arguments
@@ -111,6 +96,27 @@ define containers
     $(strip $(filter-out $(_NL),$(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var)))))))
 endef
 
+define container_build
+	$(eval CONTAINER := $(word 1,$1))
+	$(eval ENVIRONMENT := $(word 2,$1))
+	$(eval ARGS := $(shell echo $(args)))
+
+	@echo "Building container: $(CONTAINER)"
+	@echo "Environment: $(ENVIRONMENT)"
+
+	@if [ -z "$(filter $(INPUT_CONTAINER),$(shell echo "$(containers)"))" ]; then \
+        echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var)))))), or 'all' to build all defined containers."; \
+        exit 1; \
+    fi
+
+	@if [ "$(strip $(INPUT_ENVIRONMENT))" != "dev" ] && [ "$(strip $(INPUT_ENVIRONMENT))" != "prod" ]; then \
+        echo "Invalid environment. Please specify 'dev' or 'prod'"; \
+        exit 1; \
+    fi
+
+	docker buildx build --load -t $(CONTAINER):$(ENVIRONMENT) -f $(strip $(subst $(SPACE),,$(call container_location,$(CONTAINER))))/Dockerfile.$(ENVIRONMENT) ./$(strip $(subst $(SPACE),,$(call container_location,$(CONTAINER))))/. $(ARGS) --no-cache
+endef
+
 define container_location
     $(strip $(eval CONTAINER_NAME := $(shell echo $(1) | tr '[:lower:]' '[:upper:]'))) \
     $(CONTAINER_$(CONTAINER_NAME)_LOCATION)
@@ -122,3 +128,4 @@ define container_version
 		$(CONTAINER_$(CONTAINER_NAME)_VERSION), \
 		$(error Version data for container $(1) not found))
 endef
+
