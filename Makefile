@@ -12,7 +12,6 @@ CONTAINER_WEBAPP_DESCRIPTION			:= "An example container running a reflex webapp.
 
 .DEFAULT_GOAL := help
 .PHONY: run build push prune bump
-.IGNORE: run build push prune bump
 .SILENT: run build push prune bump
 
 help:
@@ -62,7 +61,7 @@ build:
 
 	# Validate input container name.
 	@if [ -z "$(filter $(INPUT_CONTAINER),$(shell echo "$(containers)"))" ]; then \
-        echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var))))))"; \
+        echo "Invalid container name. Please specify one of the following: $(strip $(foreach var,$(.VARIABLES),$(if $(filter CONTAINER_%_NAME,$(var)),$(strip $($(var)))))), or 'all' to build all defined containers."; \
         exit 1; \
     fi
 
@@ -113,10 +112,8 @@ define containers
 endef
 
 define container_location
-	$(strip $(eval CONTAINER_NAME := $(shell echo $(1) | tr '[:lower:]' '[:upper:]'))) \
-	$(if $(CONTAINER_$(CONTAINER_NAME)_LOCATION), \
-		$(CONTAINER_$(CONTAINER_NAME)_LOCATION), \
-		$(error Location data for container $(1) not found))
+    $(strip $(eval CONTAINER_NAME := $(shell echo $(1) | tr '[:lower:]' '[:upper:]'))) \
+    $(CONTAINER_$(CONTAINER_NAME)_LOCATION)
 endef
 
 define container_version
