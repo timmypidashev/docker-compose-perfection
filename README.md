@@ -4,7 +4,7 @@ The perfect, yet elegantly simple docker compose developer pipeline.
 ### Overview
 This repository houses a Makefile for orchestrating Docker Compose operations efficiently. The Makefile automates common tasks such as running, building, pushing Docker images to a registry, as well as pruning old images and containers. It's designed to streamline the development and deployment workflow for Docker-based projects.
 
-### The Why?
+### The Why
 Have you ever been tired of having to run the same docker/docker compose commands over and over? I'm more than certain you probably began to rely on a CI process when it came to things like generating build arguments and docker labels for your images. And while CI/CD workflows are certainly great for managing docker image builds, There are many projects which just simply don't need this much overhead just to get some build arguments and labels for a docker image. But why all this abstraction for something as simple as writing a docker command.
 
 ### The Problem
@@ -70,8 +70,8 @@ Here are the requirements for the configuration:
 1. All variables need to be in uppercase format.
 2. The `PROJECT` variables are required.
 3. The `CONTAINER` variables follow the CONTAINER_**%**_**%** format, and can really be anything.
-   NOTE: CONTAINER_%_LOCATION is required, and points to the container's dockerfile root.
-   NOTE: CONTAINER_%_VERSION is required.
+   NOTE: CONTAINER_**%**_LOCATION is required, and points to the container's dockerfile root.
+   NOTE: CONTAINER_**%**_VERSION is required.
 
 * This is at the end of the day a script, so the reader can modify it to their liking. Don't want container versioning, get rid of it. This is the freedom this makefile gives you.
 
