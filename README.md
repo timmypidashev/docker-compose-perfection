@@ -69,9 +69,9 @@ CONTAINER_API_DESCRIPTION := "An example node api backend service."
 Here are the requirements for the configuration:
 1. All variables need to be in uppercase format.
 2. The `PROJECT` variables are required.
-3. The `CONTAINER` variables follow the `CONTAINER_**%**_**%**` format, and can really be anything.
-   NOTE: `CONTAINER_**%**_LOCATION` is required, and points to the container's dockerfile root.
-   NOTE: `CONTAINER_**%**_VERSION` is required.
+3. The `CONTAINER` variables follow the `CONTAINER_%_%` format, and can really be anything.
+   NOTE: `CONTAINER_%_LOCATION` is required, and points to the container's dockerfile root.
+   NOTE: `CONTAINER_%_VERSION` is required.
 
 * This is at the end of the day a script, so the reader can modify it to their liking. Don't want container versioning, get rid of it. This is the freedom this makefile gives you.
 
